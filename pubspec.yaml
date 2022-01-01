@@ -29,9 +29,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite_common_ffi: ^2.0.0
-  file_picker_desktop: ^1.1.0
-  webview_windows: ^0.0.8
+  sqflite_common_ffi: ^2.1.0
+  file_picker_desktop: ^1.1.1
+  webview_windows: ^0.1.0
   http: ^0.13.4
   flutter_spinkit: ^5.1.0
   url_launcher: ^6.0.12

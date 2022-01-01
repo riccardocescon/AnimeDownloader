@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:http/http.dart' as http;
 import 'package:fl_anime_downloader/download_page.dart';
 import 'package:fl_anime_downloader/gallery.dart';
 import 'package:fl_anime_downloader/homepage.dart';
@@ -253,5 +253,74 @@ class Utils {
         backgroundColor: color,
         textColor: textColor,
         fontSize: 16.0);
+  }
+
+  static Future<List<String>> fetchLinks(
+      {required String animeSaturnHomepage}) async {
+    var response = await http.get(Uri.parse(animeSaturnHomepage));
+    String htmlToParse = response.body;
+    List<String> lines = htmlToParse.split("\n");
+    List<String> interestingLines = [];
+    for (String line in lines) {
+      if (line.contains("www.animesaturn.it/ep/")) {
+        interestingLines.add(line);
+      }
+    }
+
+    if (interestingLines.isEmpty) {
+      Utils.showToast(
+          "You must select the anime homepage!", Colors.red, Colors.white);
+      return [];
+    }
+
+    List<String> episodeLinks = [];
+    for (String current in interestingLines) {
+      List<String> parts = current.trim().split(" ");
+      bool found = false;
+      for (String currentPart in parts) {
+        if (currentPart.contains("href")) {
+          found = true;
+          String link = currentPart.split("\"")[1];
+          episodeLinks.add(link);
+        }
+        if (found) {
+          break;
+        }
+      }
+    }
+
+    if (episodeLinks.isEmpty) {
+      Utils.showToast(
+          "You must select the anime homepage!", Colors.red, Colors.white);
+      return [];
+    }
+
+    List<String> episodes = [];
+
+    for (String current in episodeLinks) {
+      var response = await http.get(Uri.parse(current));
+      String htmlToParse = response.body;
+      List<String> lines = htmlToParse.split("\n");
+      String videoUrlRaw = "";
+      for (String line in lines) {
+        if (line.contains("www.animesaturn.it/watch?")) {
+          videoUrlRaw = line;
+          break;
+        }
+      }
+
+      List<String> parts = videoUrlRaw.split(" ");
+      String videoUrl = "";
+      for (String currenPart in parts) {
+        if (currenPart.contains("href")) {
+          videoUrl = currenPart.split("\"")[1];
+          break;
+        }
+      }
+
+      episodes.add(videoUrl);
+    }
+
+    return episodes;
   }
 }

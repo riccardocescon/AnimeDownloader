@@ -147,9 +147,9 @@ class _AnimeWebViewState extends State<AnimeWebView> {
                   backgroundColor: Utils.getPrimaryColor(theme),
                   leading: IconButton(
                       onPressed: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context, Utils.downloadPage, (route) => false,
-                            arguments: {"theme", theme});
+                        Navigator.pushReplacementNamed(
+                            context, Utils.downloadPage,
+                            arguments: {"theme": theme});
                       },
                       icon: const Icon(Icons.arrow_back)),
                   title: StreamBuilder<String>(

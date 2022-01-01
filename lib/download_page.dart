@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:fl_anime_downloader/anime.dart';
@@ -69,6 +70,8 @@ class _DownloadPageState extends State<DownloadPage> {
 
   late Anime anime;
   bool loadedFromMap = false;
+  bool _loadResumedOptions = false;
+  bool _hasLoadedResumedOptions = false;
 
   _DownloadPageState() {
     HttpOverrides.global = MyHttpOverrides();
@@ -82,6 +85,24 @@ class _DownloadPageState extends State<DownloadPage> {
 
   Future<void> setup() async {
     destinationPath = await Options.instance.getDestinationPath();
+    setState(() {});
+  }
+
+  void loadResumeOptions(Map map) async {
+    if (_hasLoadedResumedOptions) {
+      return;
+    }
+    _hasLoadedResumedOptions = true;
+    episodeLinks.clear();
+    anime = map["anime_obj"];
+    firtEpController.text = anime.downloadedEps.toString();
+    log("Started fetching...");
+    episodeLinks =
+        await Utils.fetchLinks(animeSaturnHomepage: anime.downloadLink);
+    for (String current in episodeLinks) {
+      log("Ep : $current");
+    }
+    log("Ended fetching!");
     setState(() {});
   }
 
@@ -144,6 +165,9 @@ class _DownloadPageState extends State<DownloadPage> {
       loadImage(map["image"]);
       if (map.containsKey("resumeAnime")) {
         directDownload(map);
+      } else if (map.containsKey("resumeAnimeWithOptions")) {
+        _loadResumedOptions = true;
+        loadResumeOptions(map);
       } else {
         episodeLinks.clear();
         for (int i = 4; i < map.length; i++) {
@@ -226,9 +250,8 @@ class _DownloadPageState extends State<DownloadPage> {
             width: 200,
             height: 300,
             decoration: BoxDecoration(
-              image: DecorationImage(
-                image: animeImage,
-              ),
+              image: DecorationImage(image: animeImage, fit: BoxFit.fill),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
           Padding(
@@ -513,7 +536,7 @@ class _DownloadPageState extends State<DownloadPage> {
     }
     switchMessage = false;
     messageRefresher();
-    String msg = funnyMessages[Random().nextInt(funnyMessages.length - 1)];
+    String msg = funnyMessages[math.Random().nextInt(funnyMessages.length - 1)];
     currentMessage = msg;
     return msg;
   }

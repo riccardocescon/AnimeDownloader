@@ -331,6 +331,21 @@ class _AnimeGalleryState extends State<AnimeGallery> {
                         resumeAnime(anime);
                         Navigator.pop(context);
                       })),
+                  Utils.animeButton(
+                    "Download Page",
+                    Utils.themeAmber,
+                    () {
+                      Navigator.pushReplacementNamed(
+                          context, Utils.downloadPage,
+                          arguments: {
+                            "resumeAnimeWithOptions": true,
+                            "anime_obj": anime,
+                            "anime": anime.name,
+                            "image": anime.imageLink,
+                            "theme": theme,
+                          });
+                    },
+                  ),
                 ],
               )),
             ],

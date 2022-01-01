@@ -55,7 +55,7 @@ class _HomepageState extends State<Homepage> {
                     padding: EdgeInsets.only(bottom: 10),
                     child: Center(
                       child: Text(
-                        "V 1.0.1",
+                        "V 1.0.2",
                         style: TextStyle(
                           color: Colors.grey,
                           fontWeight: FontWeight.bold,
