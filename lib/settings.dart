@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:fl_anime_downloader/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,13 @@ class _SettingsState extends State<Settings> {
   String dropdownvalue = 'Indigo';
   var items = ['Indigo', 'Red', 'Green', 'Amber'];
   String theme = "None";
+
+  bool showCmd = false;
+
+  void setup() async {
+    showCmd = await Options.instance.getShowCmd();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {

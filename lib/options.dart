@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:fl_anime_downloader/anime.dart';
 import 'package:fl_anime_downloader/main.dart';
 import 'package:sqflite_common/sqlite_api.dart';
@@ -5,7 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class Options {
   static const _databaseName = "animeDownlaoder.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   // make this a singleton class
   Options._privateConstructor();
@@ -20,9 +22,13 @@ class Options {
   // this opens the database (and creates it if it doesn't exist)
   _initDatabase() async {
     var databaseFactory = databaseFactoryFfi;
-    return await databaseFactory.openDatabase(_databaseName,
-        options: OpenDatabaseOptions(
-            version: _databaseVersion, onCreate: _onCreate));
+    return await databaseFactory.openDatabase(
+      _databaseName,
+      options: OpenDatabaseOptions(
+          version: _databaseVersion,
+          onCreate: _onCreate,
+          onUpgrade: _onUpgrade),
+    );
   }
 
   // SQL code to create the database table
@@ -31,12 +37,24 @@ class Options {
     await db.execute(createAnimeTableQuery);
   }
 
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    switch (newVersion) {
+      case 2:
+        log("Upgrading, adding column");
+        await db.execute(updateOptionsAddShowCmdTableQuery);
+    }
+  }
+
   static String optionsTable = "options";
   static String optionsDestinationPath = "optionsDestPath";
   static String noDestinationPath = "No path setted";
   static String optionsTheme = "optionsTheme";
+  static String optionsShowCmd = "optionsShowCmd";
   static String createOptionsTableQuery =
       "CREATE TABLE IF NOT EXISTS $optionsTable ($optionsDestinationPath TEXT DEFAULT '$noDestinationPath', $optionsTheme TEXT DEFAULT '${Utils.themeIndigo}')";
+
+  static String updateOptionsAddShowCmdTableQuery =
+      "ALTER TABLE $optionsTable ADD $optionsShowCmd INTEGER DEFAULT 0";
 
   static String animeTable = "anime";
   static String animeId = "animeId";
@@ -61,6 +79,21 @@ class Options {
     } catch (error) {
       print(error);
       return error.toString();
+    }
+  }
+
+  Future<bool> getShowCmd() async {
+    Database db = await instance.database;
+    try {
+      List<Map> queryRes = await db.rawQuery("SELECT * FROM $optionsTable");
+      if (queryRes.isEmpty) {
+        return true;
+      }
+      Map source = queryRes[0];
+      return source[optionsShowCmd] == 1;
+    } catch (error) {
+      log(error.toString());
+      return true;
     }
   }
 
@@ -141,6 +174,21 @@ class Options {
       };
       await db.update(animeTable, row,
           where: "$animeName = ?", whereArgs: [anime.name]);
+      return true;
+    }
+  }
+
+  Future<bool> updateShowCmd(bool showCmd) async {
+    Database db = await instance.database;
+    List<Map> res = await db.rawQuery("SELECT * FROM $optionsTable");
+    if (res.isEmpty) {
+      return false;
+    } else {
+      // Update show cmd
+      Map<String, dynamic> row = {
+        optionsShowCmd: showCmd ? 1 : 0,
+      };
+      await db.update(optionsTable, row);
       return true;
     }
   }

@@ -8,14 +8,9 @@ import 'dart:ui';
 import 'package:fl_anime_downloader/anime.dart';
 import 'package:fl_anime_downloader/main.dart';
 import 'package:fl_anime_downloader/options.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/rendering.dart';
 import 'package:file_picker_desktop/file_picker_desktop.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -71,7 +66,10 @@ class _DownloadPageState extends State<DownloadPage> {
   late Anime anime;
   bool loadedFromMap = false;
   bool _loadResumedOptions = false;
+  bool _loadResumeOptionsEnded = false;
   bool _hasLoadedResumedOptions = false;
+
+  bool _baseLoading = false;
 
   _DownloadPageState() {
     HttpOverrides.global = MyHttpOverrides();
@@ -102,6 +100,7 @@ class _DownloadPageState extends State<DownloadPage> {
     for (String current in episodeLinks) {
       log("Ep : $current");
     }
+    _loadResumeOptionsEnded = true;
     log("Ended fetching!");
     setState(() {});
   }
@@ -154,8 +153,11 @@ class _DownloadPageState extends State<DownloadPage> {
     source.id = id;
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void loadData(context) {
+    if (_baseLoading) {
+      return;
+    }
+    _baseLoading = true;
     final arg = ModalRoute.of(context)!.settings.arguments;
     Map map = arg != null ? arg as Map : {};
     theme = map["theme"];
@@ -183,6 +185,11 @@ class _DownloadPageState extends State<DownloadPage> {
             lastDownloadDate: Utils.getAnimeDateTime());
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    loadData(context);
     String showPath = destinationPath;
     if (destinationPath.contains("\\")) {
       List<String> parts = destinationPath.split("\\");
@@ -213,7 +220,15 @@ class _DownloadPageState extends State<DownloadPage> {
               },
               icon: const Icon(Icons.arrow_back)),
         ),
-        body: isDownloading ? downloadingScreen() : mainScreen(showPath));
+        body: _loadResumedOptions && !_loadResumeOptionsEnded
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: Utils.getPrimaryColor(theme),
+                ),
+              )
+            : isDownloading
+                ? downloadingScreen()
+                : mainScreen(showPath));
   }
 
   Widget downloadingScreen() {
@@ -498,8 +513,15 @@ class _DownloadPageState extends State<DownloadPage> {
 
     print("Sending command : $downloadString");
 
-    process = await Process.start(downloadString, [],
-        runInShell: true, workingDirectory: currentAnimePath);
+    bool showCmd = await Options.instance.getShowCmd();
+    log("Showing cmd : $showCmd");
+
+    process = await Process.start(
+      downloadString,
+      [],
+      runInShell: true,
+      workingDirectory: currentAnimePath,
+    );
     process.stdout.transform(utf8.decoder).forEach((value) {
       print(value);
       if (value.contains("ETA")) {
